@@ -203,4 +203,20 @@ notify:
     upstreamServicePort: 80
     corsPolicy: allow_all
 
-# To see actual endpoints for these routes, use `$ hasura cluster status`
+# To see actual endpoints for these routes, use `$ hasura ms ls`
+
+app:
+  /:
+    corsPolicy: allow_all
+    upstreamService:
+      name: app
+      namespace: '{{ cluster.metadata.namespaces.user }}'
+    upstreamServicePath: /
+    upstreamServicePort: 80
+## un-comment the follwing lines to make app accessible only to logged in users
+#    authorizationPolicy:
+#      restrictToRoles: ["user"]
+#      noSessionRedirectUrl: http://auth.{{ cluster.name }}.hasura-app.io/ui/
+#      noAccessRedirectUrl: http://auth.{{ cluster.name }}.hasura-app.io/ui/restricted
+
+

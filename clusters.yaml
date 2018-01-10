@@ -1,6 +1,7 @@
-# Stores the information about the clusters added to this project
-#
-# - This file gets populated with the cluster information when you run
-#   `hasura cluster add`
-# - When your project is published on hasura hub, this file will not
-#   have any information about your clusters
+- alias: hasura
+  config:
+    configmap: controller-conf
+    namespace: hasura
+  data: null
+  kubeContext: chickweed92
+  name: chickweed92
