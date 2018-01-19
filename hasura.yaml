@@ -1,5 +1,4 @@
-description: Blank template for a Hasura project
-keywords: base, getting-started
-media: {}
-name: base
+description: Boilerplate code for a Gin Gonic (a full-featured web framework for Golang) project that can be deployed to the cloud with a git push (hosted on the Hasura free tier) 
+keywords: golang, gin, web
+name: hello-golang-gin
 platformVersion: v0.15.23
