@@ -218,5 +218,3 @@ app:
 #      restrictToRoles: ["user"]
 #      noSessionRedirectUrl: http://auth.{{ cluster.name }}.hasura-app.io/ui/
 #      noAccessRedirectUrl: http://auth.{{ cluster.name }}.hasura-app.io/ui/restricted
-
-
