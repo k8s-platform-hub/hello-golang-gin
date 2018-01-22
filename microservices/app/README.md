@@ -1,4 +1,4 @@
-# golang-gin
+# go-gin
 
 [Gin Gonic](https://gin-gonic.github.io/gin/) (a full-featured web framework for [Golang](https://golang.org/)) microservice with [Glide](https://glide.sh/) for package management [codegangsta/gin](https://github.com/codegangsta/gin) for live reloading in local development.
 
