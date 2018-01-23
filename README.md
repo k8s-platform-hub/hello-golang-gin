@@ -1,6 +1,8 @@
 # hello-golang-gin
 
-Boilerplate code for a [Gin Gonic](https://gin-gonic.github.io/gin/) (a full-featured web framework for [Golang](https://golang.org/)) project that can be deployed to the cloud with a git push (hosted on the [Hasura](https://hasura.io) free tier).
+"git push" and deploy a go-gin app to an HTTPS domain with no setup or configuration. 
+
+This project is a Golang Gin boilerplate for deploying to the cloud using Hasura. Make changes and "git push" to automatically build a Docker image and deploy using Kubernetes. Comes with Glide, condegangsta/gin, Gin Gonic Dockerfile and Kubernetes spec files. This can be deployed on Hasura’s free hosting tier.
 
 **Table of Contents**
 
@@ -28,7 +30,7 @@ Boilerplate code for a [Gin Gonic](https://gin-gonic.github.io/gin/) (a full-fea
   - [Using database without an ORM](#using-database-without-an-orm)
     - [Example](#example)
   - [Using database with an ORM](#using-database-with-an-orm)
-  - [Internal & External URLs (move to docs)](#internal--external-urls-move-to-docs)
+  - [Internal & External URLs](#internal--external-urls)
   - [Exploring Hasura APIs](#exploring-hasura-apis)
 
 ## What's included?
@@ -286,7 +288,7 @@ $ ./run-local-server.sh
 
 Hasura comes with a few handy tools and APIs to make it easy to add backend features to your app.
 
-### Adding authentication without any code (needs revision)
+### Adding authentication without any code
 
 When your app needs authentication, [Hasura Auth APIs](https://docs.hasura.io/0.15/manual/users/index.html) can be used to manage users, login, signup, logout etc. You can think of it like an identity service which takes away all the user management headaches from your app so that you can focus on your app's core functionality.
 
@@ -441,7 +443,7 @@ Parameters required to connect to PostgreSQL on Hasura are already available as 
 
 You can use Go ORMs like [go-pg/pq](https://github.com/go-pg/pg) and [jmoiron/sqlx](https://github.com/jmoiron/sqlx) to connect to Postgres. The database that Hasura uses for data and auth is called `hasuradb`.
 
-### Internal & External URLs (move to docs)
+### Internal & External URLs
 
 Hasura APIs like data, auth etc. can be contacted using two URLs, internal and external. When your app is running inside the cluster, it can directly contact the Data APIs without any authentication. On the other hand, external URLs always go through the API Gateway, and hence special permissions will have to be applied over table for a non-authenticated user to access data.
 
