@@ -2,18 +2,16 @@
 
 Boilerplate code for a [Gin Gonic](https://gin-gonic.github.io/gin/) (a full-featured web framework for [Golang](https://golang.org/)) project that can be deployed to the cloud with a git push (hosted on the [Hasura](https://hasura.io) free tier).
 
-<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
 - [What's included?](#whats-included)
-- [Getting started](#getting-started)
-  - [Prerequisites](#prerequisites)
+- [Deploying](#deploying)
   - [Quickstart](#quickstart)
-- [Making changes to code](#making-changes-to-code)
-  - [Directory structure](#directory-structure)
-  - [Edit](#edit)
-  - [Deploy](#deploy)
-  - [Debug](#debug)
+  - [Making changes to code](#making-changes-to-code)
+    - [Directory structure](#directory-structure)
+    - [Edit](#edit)
+    - [Deploy](#deploy)
+- [Viewing server logs and debugging](#viewing-server-logs-and-debugging)
 - [Deploying your existing Gin app](#deploying-your-existing-gin-app)
 - [Managing dependencies](#managing-dependencies)
   - [Adding a new Golang package](#adding-a-new-golang-package)
@@ -21,34 +19,59 @@ Boilerplate code for a [Gin Gonic](https://gin-gonic.github.io/gin/) (a full-fea
 - [Local development](#local-development)
   - [With Docker](#with-docker)
   - [Without Docker](#without-docker)
-- [Under the hood](#under-the-hood)
-- [Adding a database](#adding-a-database)
-  - [API Console](#api-console)
-  - [Using Data APIs](#using-data-apis)
+- [Adding backend features](#adding-backend-features)
+  - [Adding authentication without any code](#adding-authentication-without-any-code)
+    - [API gateway & session middleware](#api-gateway--session-middleware)
+    - [Auth UI](#auth-ui)
+      - [Restrict access to the entire app](#restrict-access-to-the-entire-app)
+      - [Restrict access to certain APIs only](#restrict-access-to-certain-apis-only)
+  - [Using database without an ORM](#using-database-without-an-orm)
     - [Example](#example)
-  - [Internal & External URLs](#internal--external-urls)
-- [Adding authentication without any code](#adding-authentication-without-any-code)
-  - [API gateway & session middleware](#api-gateway--session-middleware)
-  - [Auth UI](#auth-ui)
-    - [Restrict access to the entire app](#restrict-access-to-the-entire-app)
-    - [Restrict access to certain APIs only](#restrict-access-to-certain-apis-only)
-- [Next steps](#next-steps)
-
-<!-- markdown-toc end -->
+  - [Using database with an ORM](#using-database-with-an-orm)
+  - [Internal & External URLs (move to docs)](#internal--external-urls-move-to-docs)
+  - [Exploring Hasura APIs](#exploring-hasura-apis)
 
 ## What's included?
 
 - [Gin Gonic](https://gin-gonic.github.io/gin/) web app boilerplate code with sample endpoints<!-- more info? -->
 - [Glide](https://glide.sh/) for package management
 - [codegangsta/gin](https://github.com/codegangsta/gin) for live reloading in local development
+- Dockerfile integrating the above
+  ```dockerfile
+  FROM golang:1.8.5-jessie
+  
+  # install required debian packages
+  # add any package that is required after `build-essential`, end the line with \
+  RUN apt-get update && apt-get install -y \
+      build-essential \
+  && rm -rf /var/lib/apt/lists/*
+  
+  # install glide and gin
+  RUN go get github.com/Masterminds/glide
+  RUN go get github.com/codegangsta/gin
+  
+  # setup the working directory
+  WORKDIR /go/src/app
+  ADD glide.yaml glide.yaml
+  ADD glide.lock glide.lock
+  RUN mkdir /scripts
+  ADD run-local-server.sh /scripts/run-local-server.sh
+  RUN chmod +x /scripts/run-local-server.sh
+  
+  # install dependencies
+  RUN glide install --skip-test
+  
+  # add source code
+  ADD src src
+  
+  # build the source
+  RUN go build src/main.go
+  
+  # command to be executed on running the container
+  CMD ["./main"]
+  ```
 
-## Getting started
-
-### Prerequisites
-
-- [Hasura CLI](https://docs.hasura.io/0.15/manual/install-hasura-cli.html)
-- [Git](https://git-scm.com/)
-- [Docker](https://docs.docker.com/engine/installation/) or [Golang](https://golang.org/doc/install) (only for local development)
+## Deploying
 
 ### Quickstart
 
@@ -62,6 +85,13 @@ $ git add . && git commit -m "First commit"
 $ git push hasura master
 ```
 
+The quickstart command does the following:
+
+1. Creates a new directory hello-python-flask in the current working directory
+2. Creates a free Hasura cluster and sets it as the default for this project
+3. Sets up hello-python-flask as a git repository and adds hasura remote to push code
+4. Adds your SSH public key to the cluster so that you can push to it
+
 Once deployed, access the app using the following command:
 
 ```bash
@@ -69,9 +99,9 @@ Once deployed, access the app using the following command:
 $ hasura microservice open app
 ```
 
-## Making changes to code
+### Making changes to code
 
-### Directory structure
+#### Directory structure
 
 ```bash
 .
@@ -85,7 +115,7 @@ $ hasura microservice open app
 
 ```
 
-### Edit
+#### Edit
 
 Edit the code in `src/main.go`, for example, un-comment the commented lines:
 
@@ -114,7 +144,7 @@ func main() {
 }
 ```
 
-### Deploy
+#### Deploy
 
 Commit and push to deploy again:
 
@@ -134,7 +164,7 @@ $ hasura microservice open app
 # add /ping at the end of url
 ```
 
-### Debug
+## Viewing server logs and debugging
 
 If the push fails with an error `Updating deployment failed`, or the URL is showing `502 Bad Gateway`/`504 Gateway Timeout`, follow the instruction on the page and checkout the logs to see what is going wrong with the microservice:
 
@@ -148,7 +178,7 @@ $ hasura microservice logs app
 
 Fix the errors and [deploy again](#deploy).
 
-## Deploying your existing Gin app
+## Migrating your existing Gin app
 
 - Replace contents of `src/` directory with your own source files
 - Leave `k8s.yaml` and `Dockerfile` as it is (they are used by Hasura to deploy the app)
@@ -252,33 +282,95 @@ $ ./run-local-server.sh
 # press Ctrl+C to stop the server
 ```
 
-## Under the hood
+## Adding backend features
 
-Everything is declarative in a Hasura project. Your source code, configuration of clusters and database migrations are all applied and deployed in a simple `git push`.
+Hasura comes with a few handy tools and APIs to make it easy to add backend features to your app.
 
- ![architecture-microservices](assets/deploy.gif)
- ![architecture-baas](assets/baas.gif)
+### Adding authentication without any code (needs revision)
 
-Read more about the Hasura architecture [here](https://docs.hasura.io/0.15/manual/cluster/architecture.html).
+When your app needs authentication, [Hasura Auth APIs](https://docs.hasura.io/0.15/manual/users/index.html) can be used to manage users, login, signup, logout etc. You can think of it like an identity service which takes away all the user management headaches from your app so that you can focus on your app's core functionality.
 
-## Adding a database
+Just like the Data APIs, you can checkout and experiment with the Auth APIs using [Hasura API Console](https://docs.hasura.io/0.15/manual/api-console/index.html).
 
-Hasura comes with a pre-configured ready-to-use PostgreSQL database, which can be contacted over HTTP JSON APIs. You can use this database from client side or server side just by making HTTP API calls with JSON data. There are no DB connection strings or ORMs to worry about.
+Combined with database permission and API gateway session resolution, you can control which user or what roles have access to each row and column in any table.
 
-### API Console
+#### API gateway & session middleware
 
-The best place to get started with APIs is [Hasura API Console](https://docs.hasura.io/0.15/manual/api-console/index.html).
+For every request coming through external URL into a cluster, the API gateway tries to resolve a user based on a `Cookie` or an `Authorization` header. If none of them are present or are invalid, the following header is set and then the request is passed on to the upstream service:
 
-```bash
-# execute inside the project directory
-$ hasura api-console
+- `X-Hasura-Role: anonymous`
+
+
+But, if the cookie or the authorization header does resolve to a user, gateway gets the user's ID and role from auth microservice and add them as headers before passing to upstream:
+
+- `X-Hasura-User-Id: 3`
+- `X-Hasura-Role: user`
+
+Hence, other microservices need not manage sessions and can just rely on `X-Hasura-Role` and `X-Hasura-User-Id` headers.
+
+`admin`, `user`, `anonymous` are three built-in roles in the Hasura platform.
+
+#### Auth UI
+
+Hasura Auth APIs ship with a beautiful built-in user interface for common actions like login, signup etc. You can use these directly with your application and avoid building any user interface for logging in etc.
+
+##### Restrict access to the entire app
+
+Edit `conf/routes.yaml` and add the following lines to make the microservice accessible only to logged in users:
+
+```yaml
+authorizationPolicy:
+  restrictToRoles: ["user"]
+  noSessionRedirectUrl: https://auth.{{ cluster.name }}.hasura-app.io/ui/
+  noAccessRedirectUrl: https://auth.{{ cluster.name }}.hasura-app.io/ui/restricted
 ```
 
-This command will run a small web server and opens up API Console in a new browser tab. There are already some tables created along with this boilerplate, like `article` and `author`. These tables were created using [migrations](https://docs.hasura.io/0.15/manual/data/data-migration.html). Every change you make on the console is saved as a migration inside `migrations/` directory.
+Commit and push the new configuration:
 
-![api-console](assets/api-explorer.png)
+```bash
+$ git add conf/routes.yaml
+$ git commit -m "restrict app to logged in users"
+$ git push hasura master
+```
 
-### Using Data APIs
+Now, anyone who is not logged in will see a login prompt while visiting the microservice url.
+
+```bash
+# open the microservice url in a browser
+$ hasura ms open app
+```
+
+![auth-ui-kit-login](assets/uikit-dark.png)
+
+##### Restrict access to certain APIs only
+
+When you don't want to restrict access to entire app, but only to particular path/APIs, you can check for the header `X-Hasura-Role` and make a redirect if it is not what you require. For e.g. if you want to restrict access to `/profile` only to logged in users, the route can look like the following:
+
+```golang
+r.GET("/profile", func(c *gin.Context) {
+    baseDomain := c.GetHeader("X-Hasura-Base-Domain")
+    role := c.GetHeader("X-Hasura-Role")
+    if role == "user" {
+        userId := c.GetHeader("X-Hasura-User-Id")
+        c.JSON(http.StatusOK, gin.H{
+            "userId": userId,
+        })
+    } else {
+        c.Redirect(http.StatusTemporaryRedirect,
+            fmt.Sprintf(
+                "http://auth.%s/ui?redirect_to=http://app.%s/profile",
+                baseDomain, baseDomain,
+            ),
+        )
+    }
+})
+```
+
+When someone visits `app.[cluster-name].hasura-app.io/profile` and is not logged in, they'll be redirected to login screen and after logging in or signing up, they're redirected back to `/profile`.
+
+Read more about Auth APIs [here](https://docs.hasura.io/0.15/manual/users/index.html).
+
+### Using database without an ORM
 
 - Create required tables/columns using API Console (Data -> Schema)
 - Use Query Builder under API Explorer and create the query
@@ -319,122 +411,58 @@ The output will be something similar to:
 
 ```json
 [
-    {
-      "author_id": 12,
-      "content": "Vestibulum accumsan neque et nunc. Quisque...",
-      "id": 1,
-      "rating": 4,
-      "title": "sem ut dolor dapibus gravida."
-    },
-    {
-      "author_id": 10,
-      "content": "lacus pede sagittis augue, eu tempor erat neque...",
-      "id": 2,
-      "rating": 4,
-      "title": "nonummy. Fusce fermentum fermentum arcu."
-    }, 
-    ...
-  ]
+  {
+    "author_id": 12,
+    "content": "Vestibulum accumsan neque et nunc. Quisque...",
+    "id": 1,
+    "rating": 4,
+    "title": "sem ut dolor dapibus gravida."
+  },
+  {
+    "author_id": 10,
+    "content": "lacus pede sagittis augue, eu tempor erat neque...",
+    "id": 2,
+    "rating": 4,
+    "title": "nonummy. Fusce fermentum fermentum arcu."
+  }, 
+  ...
+]
 ```
 
 
-### Internal & External URLs
+### Using database with an ORM
+
+Parameters required to connect to PostgreSQL on Hasura are already available as the following environment variables:
+
+- `POSTGRES_HOSTNAME`
+- `POSTGRES_PORT`
+- `POSTGRES_USERNAME`
+- `POSTGRES_PASSWORD`
+
+You can use Go ORMs like [go-pg/pq](https://github.com/go-pg/pg) and [jmoiron/sqlx](https://github.com/jmoiron/sqlx) to connect to Postgres. The database that Hasura uses for data and auth is called `hasuradb`.
+
+### Internal & External URLs (move to docs)
 
 Hasura APIs like data, auth etc. can be contacted using two URLs, internal and external. When your app is running inside the cluster, it can directly contact the Data APIs without any authentication. On the other hand, external URLs always go through the API Gateway, and hence special permissions will have to be applied over table for a non-authenticated user to access data.
 
 - `http://data.hasura` - internal url
 - `http://data.[cluster-name].hasura-app.io` - external url
 
-*PS*: [Hasura Data APIs](https://docs.hasura.io/0.15/manual/data/index.html) are really powerful with nifty features like relationships, role based row and column level permissions etc. Using the APIs to their full potential will prevent you from re-inventing the wheel while building your app and can save a lot of time. 
+**PS**: [Hasura Data APIs](https://docs.hasura.io/0.15/manual/data/index.html) are really powerful with nifty features like relationships, role based row and column level permissions etc. Using the APIs to their full potential will prevent you from re-inventing the wheel while building your app and can save a lot of time. 
 
-*TIP*: Use `hasura ms list` to get all internal and external URLs available in your current cluster.
+**TIP**: Use `hasura ms list` to get all internal and external URLs available in your current cluster.
 
 Read more about Data APIs [here](https://docs.hasura.io/0.15/manual/data/index.html).
 
-## Adding authentication without any code
+### Exploring Hasura APIs
 
-When your app needs authentication, [Hasura Auth APIs](https://docs.hasura.io/0.15/manual/users/index.html) can be used to manage users, login, signup, logout etc. You can think of it like an identity service which takes away all the user management headaches from your app so that you can focus on your app's core functionality.
-
-Just like the Data APIs, you can checkout and experiment with the Auth APIs using [Hasura API Console](https://docs.hasura.io/0.15/manual/api-console/index.html).
-
-Combined with database permission and API gateway session resolution, you can control which user or what roles have access to each row and column in any table.
-
-### API gateway & session middleware
-
-For every request coming through external URL into a cluster, the API gateway tries to resolve a user based on a `Cookie` or an `Authorization` header. If none of them are present or are invalid, the following header is set and then the request is passed on to the upstream service:
-
-- `X-Hasura-Role: anonymous`
-
-
-But, if the cookie or the authorization header does resolve to a user, gateway gets the user's ID and role from auth microservice and add them as headers before passing to upstream:
-
-- `X-Hasura-User-Id: 3`
-- `X-Hasura-Role: user`
-
-Hence, other microservices need not manage sessions and can just rely on `X-Hasura-Role` and `X-Hasura-User-Id` headers.
-
-`admin`, `user`, `anonymous` are three built-in roles in the Hasura platform.
-
-### Auth UI
-
-Hasura Auth APIs ship with a beautiful built-in user interface for common actions like login, signup etc. You can use these directly with your application and avoid building any user interface for logging in etc.
-
-#### Restrict access to the entire app
-
-Edit `conf/routes.yaml` and add the following lines to make the microservice accessible only to logged in users:
-
-```yaml
-authorizationPolicy:
-  restrictToRoles: ["user"]
-  noSessionRedirectUrl: https://auth.{{ cluster.name }}.hasura-app.io/ui/
-  noAccessRedirectUrl: https://auth.{{ cluster.name }}.hasura-app.io/ui/restricted
-```
-
-Commit and push the new configuration:
+The best place to get started with APIs is [Hasura API Console](https://docs.hasura.io/0.15/manual/api-console/index.html).
 
 ```bash
-$ git add conf/routes.yaml
-$ git commit -m "restrict app to logged in users"
-$ git push hasura master
+# execute inside the project directory
+$ hasura api-console
 ```
 
-Now, anyone who is not logged in will see a login prompt while visiting the microservice url.
+This command will run a small web server and opens up API Console in a new browser tab. There are already some tables created along with this boilerplate, like `article` and `author`. These tables were created using [migrations](https://docs.hasura.io/0.15/manual/data/data-migration.html). Every change you make on the console is saved as a migration inside `migrations/` directory.
 
-```bash
-# open the microservice url in a browser
-$ hasura ms open app
-```
-
-![auth-ui-kit-login](assets/uikit-dark.png)
-
-#### Restrict access to certain APIs only
-
-When you don't want to restrict access to entire app, but only to particular path/APIs, you can check for the header `X-Hasura-Role` and make a redirect if it is not what you require. For e.g. if you want to restrict access to `/profile` only to logged in users, the route can look like the following:
-
-```golang
-r.GET("/profile", func(c *gin.Context) {
-    baseDomain := c.GetHeader("X-Hasura-Base-Domain")
-    role := c.GetHeader("X-Hasura-Role")
-    if role == "user" {
-        userId := c.GetHeader("X-Hasura-User-Id")
-        c.JSON(http.StatusOK, gin.H{
-            "userId": userId,
-        })
-    } else {
-        c.Redirect(http.StatusTemporaryRedirect,
-            fmt.Sprintf(
-                "http://auth.%s/ui?redirect_to=http://app.%s/profile",
-                baseDomain, baseDomain,
-            ),
-        )
-    }
-})
-```
-
-When someone visits `app.[cluster-name].hasura-app.io/profile` and is not logged in, they'll be redirected to login screen and after logging in or signing up, they're redirected back to `/profile`.
-
-Read more about Auth APIs [here](https://docs.hasura.io/0.15/manual/users/index.html).
-
-## Next steps
-
-- [Add another microservice](https://docs.hasura.io/0.15/manual/hasuractl/hasura_microservice_create.html)
+![api-console](assets/api-explorer.png)
