@@ -155,7 +155,7 @@ Fix the errors and [deploy again](#deploy).
 - Leave `k8s.yaml` and `Dockerfile` as it is (they are used by Hasura to deploy the app)
 - Add your Go dependencies using `dep` (see [adding go dependencies](#adding-a-new-golang-package))
 - Add any system dependencies by editing `Dockerfile` (see [adding system dependencies](#adding-a-new-system-package))
-- If you do not want to use glide, remove both yaml and lock files and edit `Dockerfile` to remove any references to them
+- If you do not want to use dep, remove both toml and lock files and edit `Dockerfile` to remove any references to them
 - If `src/` doesn't have a `main.go`, edit last few lines if `Dockerfile` to build and run the correct Go file
 
 ## Managing dependencies
@@ -179,7 +179,7 @@ $ cd microservices/app
 $ dep ensure -add github.com/gin-contrib/authz
 ```
 
-This will update `glide.yaml` and `glide.lock`.
+This will update `Gopkg.toml` and `Gopkg.lock`.
 
 ### Adding a new system package
 

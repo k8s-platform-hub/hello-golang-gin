@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Hello world - Golang Gin</title>
+        <style>
+            body {font-family: sans-serif; line-height: 23px;}
+            code {color: #222; background: #f9f9f9;}
+        </style>
+    </head>
+    <body style="color: #333">
+        <div style="max-width: 800px; margin: 0 auto;">
+            <a href="/">Back to /</a>
+            <div style="float: right;">[Source: <code>microservices/app/src/auth.go</code>]</div>
+            <br/>
+            <h1>You are logged in!</h1>
+            <hr/>
+            <label>User Id:</label> {{ .userId }}<br/>
+            <label>Roles:</label> {{ .roles }}<br/>
+            <hr/>
+            <a href="http://auth.{{ .baseDomain }}/ui/logout?redirect_url=https%3A%2F%2Fapp.{{ .baseDomain }}%2Fexamples%2Fauth">Logout</a>
+        </div>
+    </body>
+</html>

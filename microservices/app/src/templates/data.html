@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Hello world - Golang Gin</title>
+        <style>
+            body {font-family: sans-serif; line-height: 23px;}
+            code {color: #222; background: #f9f9f9;}
+        </style>
+    </head>
+    <body style="color: #333">
+        <div style="max-width: 800px; margin: 0 auto;">
+            <a href="/">Back to /</a>
+            <div style="float: right;">[Source: <code>microservices/app/src/data.go</code>]</div>
+            <br/>
+            <h1>Articles fetched from article table</h1>
+            <hr/>
+            Run:<br/>
+            <code> $ hasura api-console </code><br/>
+            to explore Hasura Data APIs.<br/><br/>
+
+            This data is fetched from postgres via JSON data APIs.<br/>
+            Code written in go makes the data API call and renders this template.
+            <hr/>
+            <pre style=" white-space: pre-wrap; white-space: -moz-pre-wrap; white-space: -pre-wrap; white-space: -o-pre-wrap; word-wrap: break-word;">
+              {{ .data }}
+            </pre>
+        </div>
+    </body>
+</html>
