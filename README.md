@@ -2,7 +2,7 @@
 
 "git push" and deploy a go-gin app to an HTTPS domain with no setup or configuration. 
 
-This project is a Golang Gin boilerplate for deploying to the cloud using Hasura. Make changes and "git push" to automatically build a Docker image and deploy using Kubernetes. Comes with Glide, condegangsta/gin, Gin Gonic Dockerfile and Kubernetes spec files. This can be deployed on Hasura’s free hosting tier.
+This project is a Golang Gin boilerplate for deploying to the cloud using Hasura. Make changes and "git push" to automatically build a Docker image and deploy using Kubernetes. Comes with dep, condegangsta/gin, Gin Gonic Dockerfile and Kubernetes spec files. This can be deployed on Hasura’s free hosting tier.
 
 **Table of Contents**
 
@@ -36,7 +36,7 @@ This project is a Golang Gin boilerplate for deploying to the cloud using Hasura
 ## What's included?
 
 - [Gin Gonic](https://gin-gonic.github.io/gin/) web app boilerplate code with sample endpoints<!-- more info? -->
-- [Glide](https://glide.sh/) for package management
+- [Dep](https://golang.github.io/dep/) for package management
 - [codegangsta/gin](https://github.com/codegangsta/gin) for live reloading in local development
 - Dockerfile integrating the above
   ```dockerfile
@@ -48,26 +48,21 @@ This project is a Golang Gin boilerplate for deploying to the cloud using Hasura
       build-essential \
   && rm -rf /var/lib/apt/lists/*
   
-  # install glide and gin
-  RUN go get github.com/Masterminds/glide
-  RUN go get github.com/codegangsta/gin
+  # install dep and gin
+  RUN go get github.com/golang/dep/cmd/dep github.com/codegangsta/gin
   
   # setup the working directory
   WORKDIR /go/src/app
-  ADD glide.yaml glide.yaml
-  ADD glide.lock glide.lock
-  RUN mkdir /scripts
-  ADD run-local-server.sh /scripts/run-local-server.sh
-  RUN chmod +x /scripts/run-local-server.sh
+  COPY Gopkg.toml Gopkg.lock ./
   
   # install dependencies
-  RUN glide install --skip-test
+  RUN dep ensure -vendor-only
   
   # add source code
-  ADD src src
-  
+  COPY src src
+  WORKDIR src
   # build the source
-  RUN go build src/main.go
+  RUN go build -o main *.go
   
   # command to be executed on running the container
   CMD ["./main"]
@@ -109,50 +104,26 @@ $ hasura microservice open app
 .
 ├── Dockerfile             # instructions to build the image
 ├── k8s.yaml               # defines how the app is deployed
-├── glide.yaml             # lists dependent packages (handled by glide)
-├── glide.lock             # locked versions of packages (handled by glide)
-├── run-local-server.sh    # helper script to run local server
+├── Gopkg.toml             # lists dependent packages (handled by dep)
+├── Gopkg.lock             # locked versions of packages (handled by dep)
 └── src
     └── main.go            # go source code
-
+    ...
 ```
 
-#### Edit
+#### Edit & Deploy
 
 Edit the code in `src/main.go`, for example, un-comment the commented lines:
 
-```golang
-package main
-
-import "github.com/gin-gonic/gin"
-
-func main() {
-	r := gin.Default()
-	r.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "Hello from Gin on Hasura",
-		})
-	})
-
-	// // un-comment the following lines
-	//  r.GET("/ping", func(c *gin.Context) {
-	//  	c.JSON(200, gin.H{
-	//  		"message": "pong",
-	//  	})
-	//  })
-
-	r.Run() // listen and serve on 0.0.0.0:8080 by default
-	// set environment variable PORT if you want to change port
-}
+```bash
+$ vim src/main.go
 ```
-
-#### Deploy
 
 Commit and push to deploy again:
 
 ```bash
 $ git add src/main.go
-$ git commit -m "added new endpoint /ping"
+$ git commit -m "changed main"
 $ git push hasura master
 
 ```
@@ -162,8 +133,6 @@ Checkout the new endpoint:
 ```bash
 # open the url in browser
 $ hasura microservice open app
-
-# add /ping at the end of url
 ```
 
 ## Viewing server logs and debugging
@@ -184,7 +153,7 @@ Fix the errors and [deploy again](#deploy).
 
 - Replace contents of `src/` directory with your own source files
 - Leave `k8s.yaml` and `Dockerfile` as it is (they are used by Hasura to deploy the app)
-- Add your Go dependencies using `glide` (see [adding go dependencies](#adding-a-new-golang-package))
+- Add your Go dependencies using `dep` (see [adding go dependencies](#adding-a-new-golang-package))
 - Add any system dependencies by editing `Dockerfile` (see [adding system dependencies](#adding-a-new-system-package))
 - If you do not want to use glide, remove both yaml and lock files and edit `Dockerfile` to remove any references to them
 - If `src/` doesn't have a `main.go`, edit last few lines if `Dockerfile` to build and run the correct Go file
@@ -201,14 +170,15 @@ $ cd microservices/app
 $ docker build -t hello-golang-gin-app .
 $ docker run --rm -it -v $(pwd):/go/src/app \
              hello-golang-gin-app \
-             glide get github.com/gin-contrib/authz
+             dep ensure -add github.com/gin-contrib/authz
 
 
 # without docker
 
 $ cd microservices/app
-$ glide get github.com/gin-contrib/authz
+$ dep ensure -add github.com/gin-contrib/authz
 ```
+
 This will update `glide.yaml` and `glide.lock`.
 
 ### Adding a new system package
@@ -250,9 +220,9 @@ $ docker run --rm -it -p 8080:8080 hello-golang-gin-app
 # set CLUSTER_NAME
 $ docker run --rm -it -p 8080:8080 \
              -v $(pwd):/go/src/app \
-             -e CLUSTER_NAME=[your-cluster-name]
              hello-golang-gin-app \
-             /scripts/run-local-server.sh
+             bash
+root@id:/go/src/app # cd src && gin --bin main-bin --port 8080 run
 
 # app will be available at http://localhost:8080
 # press Ctrl+C to stop the server
@@ -267,17 +237,14 @@ $ docker run --rm -it -p 8080:8080 \
 # change to app directory
 $ cd mircoservices/app
 
-# install glide for package management
-$ go get github.com/Masterminds/glide
+# install dep for package management
+$ go get github.com/golang/dep/cmd/dep
 # install gin for live reloading
 $ go get github.com/codegangsta/gin
 
-# set CLUSTER_NAME
-$ export CLUSTER_NAME=[your-cluster-name]
-
 # run the local server script
 # windows users: run this in git bash
-$ ./run-local-server.sh
+$ cd src && gin --bin main-bin --port 8080 run
 
 # app will be available at http://localhost:8080
 # any change you make to your source code will be immediately updated on the running app
