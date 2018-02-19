@@ -1,10 +1,10 @@
 FROM golang:1.8.5-jessie
 
-# install required debian packages
-# add any package that is required after `build-essential`, end the line with \
-RUN apt-get update && apt-get install -y \
-    build-essential \
-&& rm -rf /var/lib/apt/lists/*
+# # uncomment to install required debian packages
+# # add any package that is required after `build-essential`, end the line with \
+# RUN apt-get update && apt-get install -y \
+#     build-essential \
+# && rm -rf /var/lib/apt/lists/*
 
 # install dep and gin
 RUN go get github.com/golang/dep/cmd/dep github.com/codegangsta/gin
