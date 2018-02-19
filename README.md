@@ -222,7 +222,7 @@ $ docker run --rm -it -p 8080:8080 \
              -v $(pwd):/go/src/app \
              hello-golang-gin-app \
              bash
-root@id:/go/src/app # cd src && gin --bin main-bin --port 8080 run
+root@id:/go/src/app/src# gin --bin main-bin --port 8080 run
 
 # app will be available at http://localhost:8080
 # press Ctrl+C to stop the server

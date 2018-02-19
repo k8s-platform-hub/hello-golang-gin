@@ -1,6 +1,6 @@
 # go-gin
 
-[Gin Gonic](https://gin-gonic.github.io/gin/) (a full-featured web framework for [Golang](https://golang.org/)) microservice with [Glide](https://glide.sh/) for package management [codegangsta/gin](https://github.com/codegangsta/gin) for live reloading in local development.
+[Gin Gonic](https://gin-gonic.github.io/gin/) (a full-featured web framework for [Golang](https://golang.org/)) microservice with [Dep](https://golang.github.io/dep/) for package management [codegangsta/gin](https://github.com/codegangsta/gin) for live reloading in local development.
 
 ## Managing dependencies
 
@@ -14,15 +14,15 @@ $ cd microservices/app
 $ docker build -t hello-golang-gin-app .
 $ docker run --rm -it -v $(pwd):/go/src/app \
              hello-golang-gin-app \
-             glide get github.com/gin-contrib/authz
+             dep ensure -add github.com/gin-contrib/authz
 
 
 # without docker
 
 $ cd microservices/app
-$ glide get github.com/gin-contrib/authz
+$ dep ensure -add github.com/gin-contrib/authz
 ```
-This will update `glide.yaml` and `glide.lock`.
+This will update `Gopkg.toml` and `Gopkg.lock`.
 
 ### Adding a new system package
 
@@ -60,12 +60,11 @@ $ docker run --rm -it -p 8080:8080 hello-golang-gin-app
 
 # 2) with live reloading
 # any change you make to your source code will be immediately updated on the running app
-# set CLUSTER_NAME
 $ docker run --rm -it -p 8080:8080 \
              -v $(pwd):/go/src/app \
-             -e CLUSTER_NAME=[your-cluster-name]
              hello-golang-gin-app \
-             /scripts/run-local-server.sh
+             bash
+root@<id>:/go/src/app/src$ gin --bin main-bin --port 8080 run
 
 # app will be available at http://localhost:8080
 # press Ctrl+C to stop the server
@@ -80,17 +79,16 @@ $ docker run --rm -it -p 8080:8080 \
 # change to app directory
 $ cd mircoservices/app
 
-# install glide for package management
-$ go get github.com/Masterminds/glide
+# install dep for package management
+$ go get github.com/golang/dep/cmd/dep
 # install gin for live reloading
 $ go get github.com/codegangsta/gin
 
-# set CLUSTER_NAME
-$ export CLUSTER_NAME=[your-cluster-name]
+# install dependencies
+$ dep ensure -vendor-only
 
-# run the local server script
-# windows users: run this in git bash
-$ ./run-local-server.sh
+$ cd src
+$ gin --bin main-bin --port 8080 run
 
 # app will be available at http://localhost:8080
 # any change you make to your source code will be immediately updated on the running app
